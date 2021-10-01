@@ -1,51 +1,65 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const express = require('express');
 
-const mongoConnString = process.env.ALD_CONN_STRING;
-const mongoClient = new MongoClient(mongoConnString);
-
 const expressApp = express();
 const expressPort = 3000;
 
-expressApp.get('/profiles', async (req, res, next) => {
-    try {
-        await mongoClient.connect();
+async function dbConnBeforeware(req, res, next) {
+    const mongoConnString = process.env.ALD_CONN_STRING;
+    const mongoClient = new MongoClient(mongoConnString);
 
-        const db = mongoClient.db('audit-log-demo');
-        const col = db.collection('user-profile');
+    await mongoClient.connect();
+    console.log("Database connection established!");
+
+    req.dbClient = mongoClient;
+    req.dbDatabaseRef = mongoClient.db('audit-log-demo');
+
+    next();
+}
+
+async function dbConnAfterware(req, res, next) {
+    await req.dbClient.close();
+
+    console.log("Database connection closed!");
+
+    next();
+}
+
+async function getAllProfilesHandler(req, res, next) {
+    try {
+        const col = req.dbDatabaseRef.collection('user-profile');
 
         const profileList = await col.find({}).toArray();
 
         res.send({
             data: profileList
         });
+
+        next();
     } catch (err) {
         next(err);
     }
-    finally {
-        await mongoClient.close();
-    }
-});
+}
 
-expressApp.get('/profile/:id', async (req, res, next) => {
+async function getProfileByIdHandler(req, res, next) {
     try {
-        await mongoClient.connect();
-
-        const db = mongoClient.db('audit-log-demo');
-        const col = db.collection('user-profile');
+        const col = req.dbDatabaseRef.collection('user-profile');
 
         const profile = await col.findOne({ _id: ObjectId(req.params.id) });
 
         res.send({
             data: profile
         });
+
+        next();
     } catch (err) {
         next(err);
     }
-    finally {
-        await mongoClient.close();
-    }
-});
+}
+
+expressApp.get('/profiles', dbConnBeforeware, getAllProfilesHandler, dbConnAfterware);
+
+expressApp.get('/profile/:id', dbConnBeforeware, getProfileByIdHandler, dbConnAfterware);
 
 expressApp.listen(expressPort, () => {
     console.log(`Example app listening at http://localhost:${expressPort}`)
