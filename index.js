@@ -47,11 +47,8 @@ async function getProfileByIdHandler(req, res, next) {
 
         const profile = await col.findOne({ _id: ObjectId(req.params.id) });
 
-        res.send({
-            data: profile
-        });
-
-        next();
+        // let's fake an error here
+        throw new Error("Something went wrong!");
     } catch (err) {
         next(err);
     }
@@ -60,6 +57,16 @@ async function getProfileByIdHandler(req, res, next) {
 expressApp.get('/profiles', dbConnBeforeware, getAllProfilesHandler, dbConnAfterware);
 
 expressApp.get('/profile/:id', dbConnBeforeware, getProfileByIdHandler, dbConnAfterware);
+
+expressApp.use(async function (err, req, res, next) {
+    if (req.dbClient) {
+        await req.dbClient.close();
+        console.log("Database connection closed!");
+    }
+
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
 
 expressApp.listen(expressPort, () => {
     console.log(`Example app listening at http://localhost:${expressPort}`)
