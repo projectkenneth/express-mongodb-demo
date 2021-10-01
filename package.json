@@ -1,7 +1,7 @@
 {
-  "name": "audit-log-demo-api",
+  "name": "express-mongodb-demo",
   "version": "1.0.0",
-  "description": "A simple Audit Log API made with Express and MongoDB",
+  "description": "A simple API made with Express and MongoDB",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
