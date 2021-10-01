@@ -47,8 +47,14 @@ async function getProfileByIdHandler(req, res, next) {
 
         const profile = await col.findOne({ _id: ObjectId(req.params.id) });
 
+        res.send({
+            data: profile
+        });
+
+        next();
+
         // let's fake an error here
-        throw new Error("Something went wrong!");
+        // throw new Error("Something went wrong!");
     } catch (err) {
         next(err);
     }
